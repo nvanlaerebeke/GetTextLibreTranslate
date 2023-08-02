@@ -8,20 +8,29 @@ internal static class PoFileUpdater
 {
     public static void Write(this POCatalog catalog, string targetFile)
     {
+        using var writeStream = File.OpenWrite(targetFile);
         var generator = new POGenerator(new POGeneratorSettings());
-        generator.Generate(File.OpenWrite(targetFile), catalog);
+        generator.Generate(writeStream, catalog);
     }
     
-    public static async Task<POCatalog> updateWithNewEntriesAsync(this POCatalog existingCatalog, POCatalog updateCatalog, Translator translator)
+    public static async Task updateWithNewEntriesAsync(this POCatalog existingCatalog, POCatalog updateCatalog, Translator translator)
     {
         var newKeys = updateCatalog.Keys.Except(existingCatalog.Keys).ToList();
         var removedKeys = existingCatalog.Keys.Except(updateCatalog.Keys).ToList();
 
         existingCatalog.RemoveKeys(removedKeys);
-        await existingCatalog.AddAndTranslateEntriesAsync(updateCatalog.Values.Where(entry => newKeys.Contains(entry.Key)).ToList(), translator);
-        return existingCatalog;
+        existingCatalog.AddKeys(newKeys);
+        await existingCatalog.TranslateEmpty(translator);
     }
 
+    private static void AddKeys(this POCatalog catalog, IEnumerable<POKey> keys)
+    {
+        foreach (var key in keys)
+        {
+            catalog.Add(new POSingularEntry(key) { Translation = string.Empty });
+        }
+    }
+    
     private static void RemoveKeys(this POCatalog catalog, IEnumerable<POKey> keys)
     {
         foreach (var poKey in keys)
@@ -34,22 +43,19 @@ internal static class PoFileUpdater
         }
     }
 
-    private static async Task AddAndTranslateEntriesAsync(this POCatalog catalog, List<IPOEntry> entries, Translator translator)
+    private static async Task TranslateEmpty(this POCatalog catalog, Translator translator)
     {
         if(!Translator.TryGetLanguageCode(catalog.Language, out var lang))
         {
             return;
         } 
-        
-        foreach (var entry in entries)
+        for (var i = 0; i < catalog.Count; i++)
         {
-            if (!entry.Count.Equals(1) || !string.IsNullOrEmpty(entry[0]))
+            if (!catalog[i].Count.Equals(1) || !string.IsNullOrEmpty(catalog[i][0]))
             {
                 continue;
             }
-            
-            catalog.Add(await entry.TranslateAsync(translator, lang));
-            catalog.Add(entry);
+            catalog[i] = await catalog[i].TranslateAsync(translator, lang!);
         }
     }
     
@@ -57,7 +63,7 @@ internal static class PoFileUpdater
     {
         return new POSingularEntry(entry.Key)
         {
-            Translation = await translator.Translate(entry[0], targetLanguage)
+            Translation = await translator.Translate(entry.Key.ToString(), targetLanguage)
         };
     }
 }

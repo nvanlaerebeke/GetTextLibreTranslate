@@ -15,6 +15,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="CommandLineParser" Version="2.9.1" />
       <PackageReference Include="Fluent.LibreTranslate" Version="1.0.6" />
       <PackageReference Include="Karambolo.PO" Version="1.10.0" />
     </ItemGroup>

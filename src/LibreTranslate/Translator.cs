@@ -31,12 +31,21 @@ internal class Translator
     
     public async Task<string> Translate(string str, LanguageCode fromLang, LanguageCode toLang)
     {
+        if (string.IsNullOrEmpty(str))
+        {
+            return string.Empty;
+        }
         return await str.TranslateAsync(fromLang, toLang);
     }
     
     public async Task<string> Translate(string str, LanguageCode toLang)
     {
-        return await(_sourceLanguage is null ? str.TranslateAsync(toLang) : str.TranslateAsync(_sourceLanguage, toLang));
+        if (string.IsNullOrEmpty(str))
+        {
+            return string.Empty;
+        }
+        var translation = await(_sourceLanguage is null ? str.TranslateAsync(toLang) : str.TranslateAsync(_sourceLanguage, toLang));
+        return translation;
     }
 
     public static bool TryGetLanguageCode(string str, out LanguageCode? languageCode)
@@ -45,7 +54,7 @@ internal class Translator
         {
             languageCode = LanguageCode.FromString(str[..2]);
         }
-        catch (Exception _)
+        catch (Exception)
         {
             languageCode = null;
             return false;

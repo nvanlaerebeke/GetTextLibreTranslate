@@ -1,28 +1,9 @@
-﻿using System.Transactions;
-using Fluent.LibreTranslate;
-using Karambolo.PO;
-using LibreTranslate;
+﻿namespace LibreTranslate;
 
-var libreTranslateServer = new Uri("http://localhost:5000");
-var libreTranslateApiKey = string.Empty;
-var templateFile = "/home/nvanlaerebeke/projects/nomadesk/nomadesk-ctrller/src/lib/locale/default.pot";
-var targetFile = "/home/nvanlaerebeke/projects/nomadesk/nomadesk-ctrller/src/lib/locale/nl_BE/LC_MESSAGES/default.po";
-
-var parser = new POParser(new POParserSettings());
-
-var templateResult = parser.Parse(File.OpenRead(templateFile));
-var targetResult = parser.Parse(File.OpenRead(targetFile));
-
-var newCatalog = await targetResult.Catalog.updateWithNewEntriesAsync(templateResult.Catalog, new Translator(libreTranslateServer, libreTranslateApiKey, LanguageCode.English));
-newCatalog.Write(targetFile);
-
-foreach (var entry in newCatalog.Values)
+public static class Program
 {
-    Console.WriteLine($"{entry.Key}");
-    foreach (var translation in entry)
+    public static async Task Main(string[] args)
     {
-        Console.WriteLine($"   - {translation}");
+        await new Launcher().Start(args);
     }
 }
-
-Console.WriteLine("Done");
